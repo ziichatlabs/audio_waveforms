@@ -85,7 +85,7 @@ class AudioFileWaveforms extends StatefulWidget {
   const AudioFileWaveforms({
     super.key,
     required this.size,
-    required this.playerController,
+    this.playerController,
     this.waveformData = const [],
     this.continuousWaveform = true,
     this.playerWaveStyle = const PlayerWaveStyle(),
