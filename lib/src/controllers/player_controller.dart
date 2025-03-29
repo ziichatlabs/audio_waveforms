@@ -161,6 +161,17 @@ class PlayerController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<List<double>> extractWaveformData({
+    required String path,
+    int noOfSamples = 100,
+  }) async {
+    final result = await waveformExtraction.extractWaveformData(
+      path: path,
+      noOfSamples: noOfSamples,
+    );
+    return result;
+  }
+
   /// A function to start the player to play/resume the audio.
   ///
   /// When playing audio is finished, this [player] will be [stopped]
