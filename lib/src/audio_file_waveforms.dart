@@ -11,7 +11,7 @@ class AudioFileWaveforms extends StatefulWidget {
   final Size size;
 
   /// A PlayerController having different controls for audio player.
-  final PlayerController playerController;
+  final PlayerController? playerController;
 
   /// Directly draws waveforms from this data. Extracted waveform data
   /// is ignored if waveform data is provided from this parameter.
@@ -135,14 +135,15 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
 
   PlayerWaveStyle get playerWaveStyle => widget.playerWaveStyle;
 
-  PlayerController get playerController => widget.playerController;
+  late final PlayerController _playerController;
 
   WaveformExtractionController get waveformExtraction =>
-      playerController.waveformExtraction;
+      _playerController.waveformExtraction;
 
   @override
   void initState() {
     super.initState();
+    _playerController = widget.playerController ?? PlayerController();
     _initialiseVariables();
     _growingWaveController = AnimationController(
       vsync: this,
@@ -157,13 +158,13 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
       ..forward()
       ..addListener(_updateGrowAnimationProgress);
     onCurrentDurationSubscription =
-        playerController.onCurrentDurationChanged.listen((event) {
+        _playerController.onCurrentDurationChanged.listen((event) {
       _seekProgress.value = event;
       _updatePlayerPercent();
     });
 
-    onCompletionSubscription = playerController.onCompletion.listen((event) {
-      _seekProgress.value = playerController.maxDuration;
+    onCompletionSubscription = _playerController.onCompletion.listen((event) {
+      _seekProgress.value = _playerController.maxDuration;
       _updatePlayerPercent();
     });
     if (widget.waveformData.isNotEmpty) {
@@ -173,7 +174,7 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
         _addWaveformData(waveformExtraction.waveformData);
       }
       if (!widget.continuousWaveform) {
-        playerController.addListener(_addWaveformDataFromController);
+        _playerController.addListener(_addWaveformDataFromController);
       } else {
         onCurrentExtractedWaveformData = waveformExtraction
             .onCurrentExtractedWaveformData
@@ -187,7 +188,7 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     onCurrentDurationSubscription.cancel();
     onCurrentExtractedWaveformData?.cancel();
     onCompletionSubscription.cancel();
-    playerController.removeListener(_addWaveformDataFromController);
+    _playerController.removeListener(_addWaveformDataFromController);
     _growingWaveController.dispose();
     super.dispose();
   }
@@ -270,8 +271,8 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     if (mounted) setState(() {});
 
     if (widget.waveformType.isLong) {
-      playerController.seekTo(
-        (playerController.maxDuration * _proportion).toInt(),
+      _playerController.seekTo(
+        (_playerController.maxDuration * _proportion).toInt(),
       );
     }
     widget.onDragEnd?.call(dragEndDetails);
@@ -302,17 +303,17 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     final localPosition = details.localPosition.dx;
 
     _proportion = localPosition <= 0 ? 0 : localPosition / widget.size.width;
-    var seekPosition = playerController.maxDuration * _proportion;
+    var seekPosition = _playerController.maxDuration * _proportion;
 
-    playerController.seekTo(seekPosition.toInt());
+    _playerController.seekTo(seekPosition.toInt());
   }
 
   /// This method handles tap seek gesture
   void _handleScrubberSeekStart(TapUpDetails details) {
     _proportion = details.localPosition.dx / widget.size.width;
-    var seekPosition = playerController.maxDuration * _proportion;
+    var seekPosition = _playerController.maxDuration * _proportion;
 
-    playerController.seekTo(seekPosition.toInt());
+    _playerController.seekTo(seekPosition.toInt());
 
     widget.tapUpUpdateDetails?.call(details);
   }
@@ -322,7 +323,7 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     // Direction of the scroll. Negative value indicates scroll left to right
     // and positive value indicates scroll right to left
     _scrollDirection = details.localPosition.dx - _initialDragPosition;
-    playerController.setRefresh(false);
+    _playerController.setRefresh(false);
     _isScrolled = true;
 
     scrollScale = playerWaveStyle.scrollScale;
@@ -337,7 +338,6 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
     if (updatedPosition + (spacing) < spacing / 2 && _scrollDirection > 0) {
       _dragOffset += details.delta;
     }
-
     // right to left
     else if (currentPosition + totalWaveWidth + details.delta.dx >
             (-spacing / 2) &&
@@ -378,8 +378,8 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
 
   /// calculates seek progress
   void _updatePlayerPercent() {
-    if (playerController.maxDuration == 0) return;
-    _audioProgress = _seekProgress.value / playerController.maxDuration;
+    if (_playerController.maxDuration == 0) return;
+    _audioProgress = _seekProgress.value / _playerController.maxDuration;
   }
 
   ///This will handle pushing back the wave when it reaches to middle/end of the
@@ -389,12 +389,13 @@ class _AudioFileWaveformsState extends State<AudioFileWaveforms>
   void _pushBackWave() {
     if (!_isScrolled && widget.waveformType.isLong) {
       _totalBackDistance = Offset(
-          (playerWaveStyle.spacing * _audioProgress * _waveformData.length) +
-              playerWaveStyle.spacing +
-              _dragOffset.dx,
-          0.0);
+        (playerWaveStyle.spacing * _audioProgress * _waveformData.length) +
+            playerWaveStyle.spacing +
+            _dragOffset.dx,
+        0.0,
+      );
     }
-    if (playerController.shouldClearLabels) {
+    if (_playerController.shouldClearLabels) {
       _initialDragPosition = 0.0;
       _totalBackDistance = Offset.zero;
       _dragOffset = Offset.zero;
