@@ -147,6 +147,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         }else{
             self.finishMode = FinishMode.stop
         }
+        // TODO: return value for flutter channel
         result(true)
     }
 
