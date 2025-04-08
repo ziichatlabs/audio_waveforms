@@ -203,12 +203,13 @@ public class SwiftAudioWaveformsPlugin: NSObject, FlutterPlugin {
                 Task {
                     let data = await newExtractor
                         .extractWaveform(samplesPerPixel: noOfSamples, playerKey: playerKey)
-                    if(newExtractor.progress == 1.0) {
+                    // TODO: newExtractor.progress is always 0
+                    // if(newExtractor.progress == 1.0) {
                         let waveformData = newExtractor.getChannelMean(data: data!)
                         DispatchQueue.main.async {
                             result(waveformData)
                         }
-                    }
+                    // }
                 }
             } catch {
                 result(FlutterError(code: Constants.audioWaveforms, message: "Failed to decode audio file", details: nil))
